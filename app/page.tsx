@@ -42,6 +42,9 @@ export default function Home() {
   const { mutate : createRoom } = useMutation({
     mutationFn: async () => {
       const res = await client.room.create.post()
+      if (res.error) throw res.error
+
+      return res.data
     }
   })
 
