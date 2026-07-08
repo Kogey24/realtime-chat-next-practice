@@ -1,7 +1,14 @@
 import { Elysia } from 'elysia'
 
+
+export const rooms = new Elysia({ prefix: "/room" })
+    .post("/create", () => {
+        console.log("Room created");
+        return { success: true, roomId: crypto.randomUUID() };
+ })
+
 export const app = new Elysia({ prefix: '/api' })
-    .get('/', 'Hello Nextjs')
+    .use(rooms)
 
 
 export const GET = app.fetch
