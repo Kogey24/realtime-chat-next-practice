@@ -24,4 +24,4 @@ const schema = {
 
 export const realtime = new Realtime({ schema, redis });
 export type RealtimeEvents = InferRealtimeEvents<typeof realtime>;
-export type message = z.infer<typeof message>;
+export type Message = z.infer<typeof message>;

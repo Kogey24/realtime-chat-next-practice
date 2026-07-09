@@ -3,6 +3,7 @@ import { Elysia } from 'elysia'
 import { nanoid } from 'nanoid'
 import { authMiddleware } from './auth';
 import z from 'zod';
+import { Message, realtime } from '@/lib/realtime';
 
 
 const ROOM_TTL_SECONDS = 60 * 10
@@ -23,15 +24,41 @@ export const rooms = new Elysia({ prefix: "/room" })
 
 export const messages = new Elysia({ prefix: "/messages" })
     .use(authMiddleware)
-    .post("/", async ({ body, auth }) => {
+    .post("/", async ({ body, auth, set }) => {
         const { sender, text } = body;
         const { roomId } = auth;
 
         const roomExists = await redis.exists(`meta:${roomId}`);
         if (!roomExists) {
-            throw new Error("Room does not exists")
+            set.status = 404;
+            return { error: "room-not-found" };
         }
+
+        const message: Message = {
+            id: nanoid(),
+            sender,
+            text,
+            timestamp: Date.now(),
+            roomId
+        }
+
+        //add message to history
+        await redis.rpush(`messages:${roomId}`, { ...message, token: auth.token });
+        await realtime.channel(roomId).emit("chat.message", message);
+
+        //HouseKeeping
+        const remaining = await redis.ttl(`meta:${roomId}`)
+
+        await redis.expire(`messages:${roomId}`, remaining);
+        await redis.expire(`history:${roomId}`, remaining);
+        await redis.expire(roomId, remaining);
+
+        return { ok: true };
+
     },
+
+
+
         {
             query: z.object({ roomId: z.string() }),
             body: z.object({

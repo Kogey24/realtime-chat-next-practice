@@ -1,45 +1,19 @@
 "use client";
 
+import { useUsername } from "@/hooks/use-username";
 import { client } from "@/lib/client";
 import { useMutation } from "@tanstack/react-query";
 import { nanoid } from "nanoid";
 import { useRouter } from "next/dist/client/components/navigation";
-import { useEffect, useState } from "react";
 
-const ANIMALS = ["Lion", "Tiger", "Bear", "Wolf", "Fox"];
 
-//This is how to persist the username in local storage so that it can be retrieved later
-const STORAGE_KEY ="chat_username";
 
-const generateUsername = () => {
-  const word = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
-  return `anonymous-${word}-${nanoid(5)}`;
-}
 
 export default function Home() {
-  const [username, setUsername] = useState("");
+
   const router = useRouter(); //built-in Next.js hook to navigate to a different page/urls
 
-  //Only runs when we render the page
-  useEffect(() => {
-    const main = () => {
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          setUsername(stored);
-          return;
-        }
-        const generated = generateUsername();
-        localStorage.setItem(STORAGE_KEY, generated);
-        setUsername(generated);
-      } catch {
-        // localStorage unavailable — fall back to in-memory only
-        setUsername(generateUsername());
-      }
-    };
-
-    main()
-  }, [])
+  const { username } = useUsername();
   
   const { mutate : createRoom } = useMutation({
     mutationFn: async () => {
