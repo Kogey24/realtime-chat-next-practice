@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 function formatTimeRemaining(seconds: number) {
   const mins = Math.floor(seconds / 60);
@@ -13,6 +13,8 @@ const Page = () => {
   const params = useParams();
   const roomId = params?.roomId;
 
+    const [input, setInput] = useState("");
+   const inputRef = useRef<HTMLInputElement>(null);
   const [copyStatus, setCopyStatus] = useState("COPY");
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
 
@@ -71,7 +73,15 @@ const Page = () => {
             </span>
             <input
               autoFocus
-              type="text"
+                          type="text"
+                          onKeyDown={(e) => {
+                              if (e.key === "Enter" && input.trim()) {
+                                  //TODO: send message
+                                  inputRef.current?.focus();
+                              }
+                          }}
+                          placeholder="Type Message..."
+                          onChange={(e) => setInput(e.target.value)}
               className="w-full bg-black border border-b-zinc-800 focus:border-zinc-700 focus:outline-none transition-colors text-zinc-100 placeholder:text-zinc-700 py-3 pl-8 pr-4 text-sm"
             />
           </div>
