@@ -6,7 +6,7 @@ import { useRealtime } from "@/lib/realitime-client";
 import type { Message } from "@/lib/realtime";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
 function formatTimeRemaining(seconds: number) {
@@ -18,6 +18,7 @@ function formatTimeRemaining(seconds: number) {
 const Page = () => {
   const params = useParams<{ roomId: string }>();
   const roomId = params.roomId;
+  const router = useRouter();
 
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -78,6 +79,9 @@ const Page = () => {
             return { messages: [...current.messages, data] };
           },
         );
+      }
+      if (event === "chat.destroy") {
+        router.push("/?destroyed=true");
       }
     }
   })
