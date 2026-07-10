@@ -21,6 +21,13 @@ export const rooms = new Elysia({ prefix: "/room" })
 
         return { roomId }
     })
+    .use(authMiddleware)
+    .get("/ttl", async ({ auth }) => {
+        const ttl = await redis.ttl(`meta:${auth.roomId}`)
+        return { ttl: ttl > 0 ? ttl : 0 };
+    }, {
+        query: z.object({ roomId: z.string() })
+    })
 
 export const messages = new Elysia({ prefix: "/messages" })
     .use(authMiddleware)
@@ -74,7 +81,8 @@ export const messages = new Elysia({ prefix: "/messages" })
             })),
         }
     }, { query: z.object({ roomId: z.string() }) }
-    )
+)
+
 
 export const app = new Elysia({ prefix: '/api' })
     .use(rooms)

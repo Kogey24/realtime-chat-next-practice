@@ -23,7 +23,6 @@ const Page = () => {
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const [copyStatus, setCopyStatus] = useState("COPY");
-  const [timeRemaining] = useState<number | null>(null);
   const { username } = useUsername();
   const queryClient = useQueryClient();
 
@@ -36,6 +35,19 @@ const Page = () => {
       return res.data;
     },
   });
+   
+  const { data: ttlData } = useQuery({
+    queryKey: ["ttl", roomId],
+    queryFn: async () => {
+      const res = await client.room.ttl.get({
+        query: { roomId } 
+      })
+      return res.data;
+    },
+    refetchInterval: 1000,
+  })
+
+  const timeRemaining = ttlData?.ttl ?? null;
 
   const { mutate: sendMessage, isPending } = useMutation({
     mutationFn: async ({ text }: { text: string }) => {
