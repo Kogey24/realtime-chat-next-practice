@@ -8,8 +8,15 @@ import {
   useRouter,
   useSearchParams,
 } from "next/dist/client/components/navigation";
+import { Suspense } from "react";
 
-export default function Home() {
+
+const Page = () => { 
+  return <Suspense><Lobby></Lobby></Suspense>
+}
+
+
+function Lobby() {
   const router = useRouter(); //built-in Next.js hook to navigate to a different page/urls
 
   const { username } = useUsername();
@@ -90,3 +97,7 @@ export default function Home() {
     </main>
   );
 }
+
+
+
+export default Page;
