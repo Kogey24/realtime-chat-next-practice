@@ -7,7 +7,7 @@ import type { Message } from "@/lib/realtime";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useParams, useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 function formatTimeRemaining(seconds: number) {
   const mins = Math.floor(seconds / 60);
@@ -36,7 +36,7 @@ const Page = () => {
     },
   });
    
-  const { data: ttlData } = useQuery({
+  const { data: ttlData, isSuccess: ttlLoaded } = useQuery({
     queryKey: ["ttl", roomId],
     queryFn: async () => {
       const res = await client.room.ttl.get({
@@ -48,6 +48,12 @@ const Page = () => {
   })
 
   const timeRemaining = ttlData?.ttl ?? null;
+
+  useEffect(() => {
+    if (ttlLoaded && timeRemaining === 0) {
+      router.push("/?destroyed=true");
+    }
+  }, [router, timeRemaining, ttlLoaded]);
 
   const { mutate: sendMessage, isPending } = useMutation({
     mutationFn: async ({ text }: { text: string }) => {

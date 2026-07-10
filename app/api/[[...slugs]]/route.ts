@@ -21,9 +21,8 @@ export const rooms = new Elysia({ prefix: "/room" })
 
         return { roomId }
     })
-    .use(authMiddleware)
-    .get("/ttl", async ({ auth }) => {
-        const ttl = await redis.ttl(`meta:${auth.roomId}`)
+    .get("/ttl", async ({ query }) => {
+        const ttl = await redis.ttl(`meta:${query.roomId}`)
         return { ttl: ttl > 0 ? ttl : 0 };
     }, {
         query: z.object({ roomId: z.string() })
