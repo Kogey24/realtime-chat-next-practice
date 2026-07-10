@@ -8,12 +8,24 @@ class AuthError extends Error {
     }
 }
 
+class RoomNotFoundError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "RoomNotFoundError";
+    }
+}
+
 
 export const authMiddleware = new Elysia({
     name: "auth"
 })
-    .error({ AuthError })
+    .error({ AuthError, RoomNotFoundError })
     .onError(({ code, error, set }) => {
+        if (code === "RoomNotFoundError" || error instanceof RoomNotFoundError) {
+            set.status = 404;
+            return { error: "room-not-found" };
+        }
+
         if (code === "AuthError" || error instanceof AuthError) {
             set.status = 401;
             return { error: "unauthorized" };
@@ -29,7 +41,11 @@ export const authMiddleware = new Elysia({
 
         const connected = await redis.hget<string[]>(`meta:${roomId}`, "connected");
 
-        if (!connected?.includes(token)) {
+        if (!connected) {
+            throw new RoomNotFoundError("Room not found.");
+        }
+
+        if (!connected.includes(token)) {
             throw new AuthError("invalid Token");
         }
 

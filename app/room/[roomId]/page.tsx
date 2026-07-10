@@ -23,6 +23,7 @@ const Page = () => {
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const [copyStatus, setCopyStatus] = useState("COPY");
+  const [destroyError, setDestroyError] = useState<string | null>(null);
   const { username } = useUsername();
   const queryClient = useQueryClient();
 
@@ -75,6 +76,39 @@ const Page = () => {
     setInput("");
     inputRef.current?.focus();
   };
+
+  const { mutate: destroyRoom, isPending: isDestroying } = useMutation({
+    mutationFn: async () => {
+      const res = await client.room.destroy.post(undefined, {
+        query: { roomId },
+      });
+
+      if (res.error) {
+        if (res.status === 401) {
+          throw new Error("You are not authorized to destroy this room.");
+        }
+
+        if (res.status === 404) {
+          throw new Error("This room has already expired or was already destroyed.");
+        }
+
+        throw new Error("Could not destroy the room. Please try again.");
+      }
+    },
+    onMutate: () => {
+      setDestroyError(null);
+    },
+    onSuccess: () => {
+      router.push("/?destroyed=true");
+    },
+    onError: (error) => {
+      setDestroyError(
+        error instanceof Error
+          ? error.message
+          : "Could not destroy the room. Please try again.",
+      );
+    },
+  });
 
 
   //function to allow realtime messaging and events
@@ -145,11 +179,21 @@ const Page = () => {
             </span>
           </div>
         </div>
-        <button className="text-xs bg-zinc-800 hover:bg-red-600 px-3 py-1.5 rounded text-zinc-400 hover-text-white foont-bold transition-all group flex items-center gap-2 disabled:opacity-50">
+        <button
+          className="text-xs bg-zinc-800 hover:bg-red-600 px-3 py-1.5 rounded text-zinc-400 hover:text-white font-bold transition-all group flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          disabled={isDestroying}
+          onClick={() => destroyRoom()}
+        >
           <span className="group-hover:animate-pulse">💣</span>
-          DESTROY NOW
+          {isDestroying ? "DESTROYING..." : "DESTROY NOW"}
         </button>
       </header>
+
+      {destroyError && (
+        <div className="border-b border-red-900 bg-red-950/50 px-4 py-3 text-sm text-red-400">
+          {destroyError}
+        </div>
+      )}
 
       {/*Messages*/}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">

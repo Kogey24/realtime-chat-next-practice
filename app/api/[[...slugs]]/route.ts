@@ -27,6 +27,31 @@ export const rooms = new Elysia({ prefix: "/room" })
     }, {
         query: z.object({ roomId: z.string() })
     })
+    .post("/destroy", async ({ cookie, query, set }) => {
+        const token = cookie["x-auth-token"]?.value as string | undefined;
+        if (!token) {
+            set.status = 401;
+            return { error: "unauthorized" };
+        }
+
+        const connected = await redis.hget<string[]>(`meta:${query.roomId}`, "connected");
+        if (!connected) {
+            set.status = 404;
+            return { error: "room-not-found" };
+        }
+
+        if (!connected.includes(token)) {
+            set.status = 401;
+            return { error: "unauthorized" };
+        }
+
+        await redis.del(`meta:${query.roomId}`, `messages:${query.roomId}`, `history:${query.roomId}`, query.roomId);
+        await realtime.channel(query.roomId).emit("chat.destroy", { isDestroyed: true });
+
+        return { ok: true };
+    }, {
+        query: z.object({ roomId: z.string() })
+    })
 
 export const messages = new Elysia({ prefix: "/messages" })
     .use(authMiddleware)
@@ -84,6 +109,23 @@ export const messages = new Elysia({ prefix: "/messages" })
 
 
 export const app = new Elysia({ prefix: '/api' })
+    .onError(({ error, set }) => {
+        if (error instanceof Error) {
+            if (error.name === "RoomNotFoundError" || error.message === "Room not found.") {
+                set.status = 404;
+                return { error: "room-not-found" };
+            }
+
+            if (
+                error.name === "AuthError" ||
+                error.message === "Missing roomId or token." ||
+                error.message === "invalid Token"
+            ) {
+                set.status = 401;
+                return { error: "unauthorized" };
+            }
+        }
+    })
     .use(rooms)
     .use(messages)
 
